@@ -16,7 +16,7 @@ library(openair)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
-nombreas_contaminantes <- c("CO", "SO2", "NO",
+nombres_contaminantes <- c("CO", "SO2", "NO",
                             "NOx", "O3", "SH2",
                             "PM")
 
@@ -43,25 +43,33 @@ tabla$Dia <- factor(tabla$Dia)
 
 # # # SERIE DE TIEMPO - 24hs # # # 
 ## CON 75 % de los datos >> 18 datos / 6 faltantes
+## 75 % de los datos diarios son 18 datos horarios
+## es decir,  6 datos faltantes horarios
+## entonces, la condición es q el día se ANULE si tiene datos faltantes MAYOR a 6 datos horarios
+
 
 tabla_dia <- tabla %>% 
   group_by(Estacion, Anio, Mes, Dia) %>%
   summarise(mean = round(mean(`PM10-1h`, na.rm = TRUE), 2),
-            n = sum(is.na(`PM10-1h`)))
+            n_faltantes = sum(is.na(`PM10-1h`)))
 
-tabla_dia$mean[tabla_dia$n > 6] <- NA #condicion de exclusion
+tabla_dia$mean[tabla_dia$n_faltantes > 6] <- NA #condicion de exclusion
 tabla_dia$Fecha <- as.Date(paste(tabla_dia$Anio, tabla_dia$Mes, tabla_dia$Dia, sep = "-"))
 
 
 # # # SERIE DE TIEMPO ANUAL # # # 
-## CON 75 % de los datos >> 282 datos diarios (6768 horarios) / 93 faltantes diarios (2232 horarios)
+## 75 % de los datos anuales son 282 datos diarios (6768 datos horarios)
+## es decir,  93 datos faltantes diarios (o 2232 horarios)
+## entonces, la condición es q el año se anule si tiene datos faltantes MAYOR a 2232 datos horarios
 
 tabla_anio <- tabla %>% 
   group_by(Estacion, Anio) %>%
   summarise(mean = round(mean(`PM10-1h`, na.rm = TRUE), 2),
-            n = sum(is.na(`PM10-1h`)))
+            n_faltantes = sum(is.na(`PM10-1h`)),
+            n = n())
 
-tabla_anio$mean[tabla_anio$n > 2232] <- NA #condicion de exclusion
+tabla_anio$mean[tabla_anio$n < 6768] <- NA #condicion de exclusion > dias del año
+tabla_anio$mean[tabla_anio$n_faltantes > 2232] <- NA #condicion de exclusion > datos faltantes
 
 
 
@@ -82,15 +90,16 @@ for(j in 1:length(levels(tabla_dia$Estacion))){
   
   plotList[[j]] <- ggplot(a, aes( x = Fecha, y = mean)) + 
     geom_line() + theme_bw() + 
-    labs(x = "", y ="",
+    labs(x ="", y = expression(MP[10]~(ug.m^-3)), 
          title = paste0(as.character(levels(tabla_dia$Estacion)[j]), " - 24hs")) +
     geom_hline(yintercept=150, col = "red") + 
     geom_hline(yintercept=100, col = "orange") + 
     geom_hline(yintercept=75, col = "yellow") + 
     geom_hline(yintercept=50, col = "green")
+    #scale_x_date(date_breaks = "1 year", date_labels = "%Y")
 }
 
-
+#plotList[[1]]
 
 
 
@@ -194,6 +203,12 @@ for(j in 1:length(levels(tabla_dia$Estacion))){
 
 
 
+ggplot(data = tabla_dia, aes(x= Estacion, y = mean )) + 
+  geom_boxplot() +
+  labs(x = "", y = expression(MP[10]~(ug.m^-3))) +
+  theme_bw() +  
+  theme(axis.title = element_text(size = rel(0.8) ),
+        axis.text.x = element_text(angle = 90, vjust = 0.5 , hjust = 1))
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
@@ -224,6 +239,14 @@ a <- data.frame( site = a$site,
                                    round(a$upper, 3), "]", sep="" ))
 
 
+a <- a[,c(1,2,18:20)]
+a <- data.frame( site = a$site,
+                 p.stars = a$p.stars,
+                 tendencia = paste(round(a$slope, 3), 
+                                   " [", 
+                                   round(a$lower, 3), ", ", 
+                                   round(a$upper, 3), "]", sep="" ))
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
 # # Serie de tiempo ANUAL #### 
@@ -237,20 +260,20 @@ a <- data.frame( site = a$site,
 plotList <- list()
 
 for(j in 1:length(levels(tabla_anio$Estacion))){
-  a <- tabla_anio[which(tabla_anio$Estacion == levels(tabla_anio$Estacion)[j]),]
+  b <- tabla_anio[which(tabla_anio$Estacion == levels(tabla_anio$Estacion)[j]),]
   
-  plotList[[j]] <- ggplot(a, aes( x = as.numeric(as.character(Anio)), 
+  plotList[[j]] <- ggplot(b, aes( x = as.numeric(as.character(Anio)), 
                                   y = mean)) + 
     geom_line() + theme_bw() + 
-    labs(title = as.character(levels(tabla_anio$Estacion)[j])) +
+   labs(title = as.character(levels(tabla_anio$Estacion)[j])) +
     geom_hline(yintercept=50, col = "red") + 
     geom_hline(yintercept= 30, col = "orange") + 
     geom_hline(yintercept=20, col = "green") +
-    labs(x = "", y = "Media anual")
+    labs(x = "", y = expression(Media~anual~MP[10]~(ug.m^-3)))
   
 }
 
-
+plotList[[1]]
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
@@ -322,3 +345,10 @@ for(j in 1:length(levels(tabla_anio$Estacion))){
   print(c(levels(tabla_dia$Estacion)[j], min, Q1[[1]], mean, median, p99[[1]], max))
 }
 
+
+ggplot(data = tabla_anio, aes(x= Estacion, y = mean )) + 
+  geom_boxplot() +
+  labs(x = "", y = expression(Media~anual~MP[10]~(ug.m^-3))) +
+  theme_bw() +  
+  theme(axis.title = element_text(size = rel(0.8) ),
+        axis.text.x = element_text(angle = 90, vjust = 0.5 , hjust = 1))
