@@ -353,11 +353,15 @@ rm(tabla_cont, tabla_int)
 # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
 
-nombreas_contaminantes <- c("CO", "SO2", "NO",
-                   "NOx", "O3", "SH2",
-                   "PM")
+nombres_contaminantes <- c("CO", "SO2", "NO2",
+                   "NOx", "O3", "SH2", "PM")
 
-contaminantes <- list( tabla_CO, tabla_SH2,
+contaminantes <- list( tabla_CO, tabla_SO2,
                        tabla_NO2, tabla_NOx,
                        tabla_O3, tabla_SH2,
                        tabla_PM)
+
+rm(tabla_CO, tabla_SO2, tabla_NO2, tabla_NOx, tabla_O3, tabla_SH2, tabla_PM)
+
+
+saveRDS(contaminantes, file = "contaminantes.rds")
