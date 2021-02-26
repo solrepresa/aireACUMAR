@@ -7,6 +7,7 @@ library(dplyr)
 library(ggplot2)
 library(lubridate)
 library(openair)
+library(data.table)
 
 
 ## SO2
@@ -39,7 +40,9 @@ tabla$Anio  <- year(tabla$`Fecha-Hora`)
 tabla$Mes <- month(tabla$`Fecha-Hora`)
 
 # Quitar datos de años que no usamos
-tabla <- tabla[-which(tabla$Anio == 2021 | tabla$Anio == 2022 | tabla$Anio == 2023 | tabla$Anio == 2024),]
+tabla <- tabla[-which(tabla$Anio == 2010 |tabla$Anio == 2011 |tabla$Anio == 2012 | tabla$Anio == 2013 |  
+                        tabla$Anio == 2014 | tabla$Anio == 2021 | tabla$Anio == 2022 | 
+                        tabla$Anio == 2023 | tabla$Anio == 2024),]
 
 tabla$`Fecha-Hora` <- tabla$`Fecha-Hora` - 01 #Le resto 1 hora para que coincida con criterio ACUMAR 24hs
 tabla$Dia <- day(tabla$`Fecha-Hora`)
@@ -67,7 +70,7 @@ tabla_dia$mean[tabla_dia$n_faltantes > 6] <- NA #condicion de exclusion
 tabla_dia$Fecha <- as.Date(paste(tabla_dia$Anio, tabla_dia$Mes, tabla_dia$Dia, sep = "-"))
 
 
-# # # SERIE DE TIEMPO ANUAL # # # 
+# # # SERIE DE TIEMPO ANUAL # # # <<< NO SE USA !!!!
 ## 75 % de los datos anuales son 282 datos diarios (6768 datos horarios)
 ## es decir,  93 datos faltantes diarios (o 2232 horarios)
 ## entonces, la condición es q el año se anule si tiene datos faltantes MAYOR a 2232 datos horarios
@@ -120,7 +123,7 @@ for(j in 1:length(levels(tabla_dia$Estacion))){
   plotList[[j]] <- ggplot(a, aes( x = Fecha, y = mean)) + 
     geom_line() + theme_bw() + 
     labs(x ="", y = expression(SO[2]~(ug.m^-3)), 
-         title = paste0(as.character(levels(tabla_dia$Estacion)[j]), " - 24hs")) +
+         title = paste0(as.character(levels(tabla_dia$Estacion)[j]), " - horarias")) +
     geom_hline(yintercept=367, col = "brown") + 
     geom_hline(yintercept=200, col = "red") + 
     geom_hline(yintercept=160, col = "orange") + 
@@ -131,6 +134,93 @@ for(j in 1:length(levels(tabla_dia$Estacion))){
 }
 
 plotList[[1]]
+plotList[[2]]
+plotList[[3]]
+plotList[[4]]
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+# Analisis Descriptivo - Superacion limite HORARIO ####
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+# Cuantos horas supera el limite de horario por año y estacion? #
+
+tabla %>% 
+  group_by(Estacion) %>%
+  .[which( .$`SO2-1h` > 250),] %>%  # modificar ACA
+  group_by(Estacion, Anio, Mes, Dia) %>% 
+  summarise(mediciones_dia = n()) %>%
+  group_by(Estacion, Anio) %>% 
+  summarise(n = n()) %>%
+  ggplot( aes(x = Anio , y = Estacion, fill = n )) + 
+  geom_tile() +
+  geom_text(aes(label= n)) +
+  theme_bw() +  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1),
+        legend.position = "none") + 
+  scale_fill_continuous(low="pink", high ="red4", na.value = "transparent") + 
+  labs(x = "", y ="", title= "Número de superacion horaria - 250 - SO2") # modificar ACA
+
+
+tabla %>% 
+  group_by(Estacion) %>%
+  .[which( .$`SO2-1h` > 230),] %>%  # modificar ACA
+  group_by(Estacion, Anio, Mes, Dia) %>% 
+  summarise(mediciones_dia = n()) %>%
+  group_by(Estacion, Anio) %>% 
+  summarise(n = n()) %>%
+  ggplot( aes(x = Anio , y = Estacion, fill = n )) + 
+  geom_tile() +
+  geom_text(aes(label= n)) +
+  theme_bw() +  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1),
+        legend.position = "none") + 
+  scale_fill_continuous(low="lightsalmon", high ="lightsalmon4", na.value = "transparent") + 
+  labs(x = "", y ="", title= "Número de superacion horaria - 230 - SO2") # modificar ACA
+
+
+tabla %>% 
+  group_by(Estacion) %>%
+  .[which( .$`SO2-1h` > 196),] %>%  # modificar ACA
+  group_by(Estacion, Anio, Mes, Dia) %>% 
+  summarise(mediciones_dia = n()) %>%
+  group_by(Estacion, Anio) %>% 
+  summarise(n = n()) %>%
+  ggplot( aes(x = Anio , y = Estacion, fill = n )) + 
+  geom_tile() +
+  geom_text(aes(label= n)) +
+  theme_bw() +  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1),
+        legend.position = "none") + 
+  scale_fill_continuous(low="khaki", high ="khaki3", na.value = "transparent") + 
+  labs(x = "", y ="", title= "Número de superacion horaria - 196 - SO2") # modificar ACA
+
+
+
+# Qué años el p99 se supera el limite horario por año y estacion? #
+
+
+tabla_corr <- tabla %>% 
+  group_by(Estacion, Anio) %>%
+  summarise(p99 = round(quantile(`SO2-1h`, probs = 0.99, na.rm = TRUE), 2))
+
+
+tabla_corr %>% 
+  group_by(Estacion) %>%
+  .[which( .$p99 > 150),] %>%  # modificar ACA
+  group_by(Estacion, Anio) %>% 
+  summarise(mediciones_dia = n()) %>%
+  group_by(Estacion, Anio) %>% 
+  summarise(n = n()) %>%
+  ggplot( aes(x = Anio , y = Estacion, fill = n )) + 
+  geom_tile() +
+  geom_text(aes(label= n)) +
+  theme_bw() +  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1),
+        legend.position = "none") + 
+  scale_fill_continuous(low="pink", high ="red4", na.value = "transparent") + 
+  labs(x = "", y ="", title= "Número de superacion horaria - p99 - 150 - SO2") # modificar ACA
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
@@ -139,25 +229,24 @@ plotList[[1]]
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
-library(data.table)
 
 
-# Qué años el p99 se supera el limite de 24hs por año y estacion? #
+# Qué años el p98 se supera el limite de 24hs por año y estacion? #
 
 
 tabla_dia_corr <- tabla_dia %>% 
   group_by(Estacion, Anio) %>%
-  summarise(p99 = round(quantile(mean, probs = 0.99, na.rm = TRUE), 2),
+  summarise(p98 = round(quantile(mean, probs = 0.98, na.rm = TRUE), 2),
             n_faltantes = sum(is.na(mean)),
             n = n())
 
-tabla_dia_corr$p99[tabla_dia_corr$n < 274] <- NA # recorte en Anios 75% de datos
-tabla_dia_corr$p99[tabla_dia_corr$n_faltantes > 91] <- NA #condicion de exclusion > datos faltantes
+tabla_dia_corr$p98[tabla_dia_corr$n < 274] <- NA # recorte en Anios 75% de datos
+tabla_dia_corr$p98[tabla_dia_corr$n_faltantes > 91] <- NA #condicion de exclusion > datos faltantes
 
 
 tabla_dia_corr %>% 
   group_by(Estacion) %>%
-  .[which( .$p99 > 150),] %>%
+  .[which( .$p98 > 200),] %>%  # modificar ACA
   group_by(Estacion, Anio) %>% 
   summarise(mediciones_dia = n()) %>%
   group_by(Estacion, Anio) %>% 
@@ -169,12 +258,12 @@ tabla_dia_corr %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1),
         legend.position = "none") + 
   scale_fill_continuous(low="pink", high ="red4", na.value = "transparent") + 
-  labs(x = "", y ="", title= "Número de superacion 24hs - p99 - 150 - MP10")
+  labs(x = "", y ="", title= "Número de superacion 24hs - p98 - 200 - SO2") # modificar ACA
 
 
 tabla_dia_corr %>% 
   group_by(Estacion) %>%
-  .[which( .$p99 > 100),] %>%
+  .[which( .$p98 > 160),] %>%
   group_by(Estacion, Anio) %>% 
   summarise(mediciones_dia = n()) %>%
   group_by(Estacion, Anio) %>% 
@@ -186,12 +275,29 @@ tabla_dia_corr %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1),
         legend.position = "none") + 
   scale_fill_continuous(low="lightsalmon", high ="lightsalmon4", na.value = "transparent") + 
-  labs(x = "", y ="", title= "Número de superacion 24hs p99 - 100 - MP10")
+  labs(x = "", y ="", title= "Número de superacion 24hs p98 - 160 - SO2")
 
 
 tabla_dia_corr %>% 
   group_by(Estacion) %>%
-  .[which( .$p99 > 75),] %>%
+  .[which( .$p98 > 125),] %>%
+  group_by(Estacion, Anio) %>% 
+  summarise(mediciones_dia = n()) %>%
+  group_by(Estacion, Anio) %>% 
+  summarise(n = n()) %>%
+  ggplot( aes(x = Anio , y = Estacion, fill = n )) + 
+  geom_tile() +
+  geom_text(aes(label= n)) +
+  theme_bw() +  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1),
+        legend.position = "none") + 
+  scale_fill_continuous(low="tan1", high ="tan3", na.value = "transparent") +
+  labs(x = "", y ="", title= "Número de superacion 24hs p98 - 125 - SO2")
+
+
+tabla_dia_corr %>% 
+  group_by(Estacion) %>%
+  .[which( .$p98 > 50),] %>% # modificar ACA
   group_by(Estacion, Anio) %>% 
   summarise(mediciones_dia = n()) %>%
   group_by(Estacion, Anio) %>% 
@@ -203,12 +309,12 @@ tabla_dia_corr %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1),
         legend.position = "none") + 
   scale_fill_continuous(low="khaki", high ="khaki3", na.value = "transparent") + 
-  labs(x = "", y ="", title= "Número de superacion 24hs p99 - 75 - MP10")
+  labs(x = "", y ="", title= "Número de superacion 24hs p98 - 50 - SO2") # modificar ACA
 
 
 tabla_dia_corr %>% 
   group_by(Estacion) %>%
-  .[which( .$p99 > 50),] %>%
+  .[which( .$p98 > 20),] %>% # modificar ACA
   group_by(Estacion, Anio) %>% 
   summarise(mediciones_dia = n()) %>%
   group_by(Estacion, Anio) %>% 
@@ -220,7 +326,8 @@ tabla_dia_corr %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1),
         legend.position = "none") + 
   scale_fill_continuous(low="palegreen", high ="palegreen3", na.value = "transparent") + 
-  labs(x = "", y ="", title= "Número de superacion 24hs p99 - 50 - MP10")
+  labs(x = "", y ="", title= "Número de superacion 24hs p98 - 20 - SO2") # modificar ACA
+
 
 
 
@@ -228,7 +335,7 @@ tabla_dia_corr %>%
 
 tabla_dia %>% 
   group_by(Estacion) %>%
-  .[which( .$mean > 150),] %>%
+  .[which( .$mean > 200),] %>%   # modificar ACA
   group_by(Estacion, Anio, Mes, Dia) %>% 
   summarise(mediciones_dia = n()) %>%
   group_by(Estacion, Anio) %>% 
@@ -240,12 +347,12 @@ tabla_dia %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1),
         legend.position = "none") + 
   scale_fill_continuous(low="pink", high ="red4", na.value = "transparent") + 
-  labs(x = "", y ="", title= "Número de superacion 24hs - 150 - PM10")
+  labs(x = "", y ="", title= "Número de superacion 24hs - 200 - SO2")  # modificar ACA
 
 
 tabla_dia %>% 
   group_by(Estacion) %>%
-  .[which( .$mean > 100),] %>%
+  .[which( .$mean > 160),] %>%  # modificar ACA
   group_by(Estacion, Anio, Mes, Dia) %>% 
   summarise(mediciones_dia = n()) %>%
   group_by(Estacion, Anio) %>% 
@@ -257,12 +364,29 @@ tabla_dia %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1),
         legend.position = "none") + 
   scale_fill_continuous(low="lightsalmon", high ="lightsalmon4", na.value = "transparent") + 
-  labs(x = "", y ="", title= "Número de superacion 24hs - 100 - PM10")
+  labs(x = "", y ="", title= "Número de superacion 24hs - 160 - SO2")  # modificar ACA
 
 
 tabla_dia %>% 
   group_by(Estacion) %>%
-  .[which( .$mean > 75),] %>%
+  .[which( .$mean > 125),] %>%  # modificar ACA
+  group_by(Estacion, Anio, Mes, Dia) %>% 
+  summarise(mediciones_dia = n()) %>%
+  group_by(Estacion, Anio) %>% 
+  summarise(n = n()) %>%
+  ggplot( aes(x = Anio , y = Estacion, fill = n )) + 
+  geom_tile() +
+  geom_text(aes(label= n)) +
+  theme_bw() +  
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1),
+        legend.position = "none") + 
+  scale_fill_continuous(low="tan1", high ="tan3", na.value = "transparent") + 
+  labs(x = "", y ="", title= "Número de superacion 24hs - 125 - SO2")  # modificar ACA
+
+
+tabla_dia %>% 
+  group_by(Estacion) %>%
+  .[which( .$mean > 50),] %>%  # modificar ACA
   group_by(Estacion, Anio, Mes, Dia) %>% 
   summarise(mediciones_dia = n()) %>%
   group_by(Estacion, Anio) %>% 
@@ -274,12 +398,11 @@ tabla_dia %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1),
         legend.position = "none") + 
   scale_fill_continuous(low="khaki", high ="khaki3", na.value = "transparent") + 
-  labs(x = "", y ="", title= "Número de superacion 24hs - 75 - PM10")
-
+  labs(x = "", y ="", title= "Número de superacion 24hs - 50 - SO2")  # modificar ACA
 
 tabla_dia %>% 
   group_by(Estacion) %>%
-  .[which( .$mean > 50),] %>%
+  .[which( .$mean > 20),] %>%  # modificar ACA
   group_by(Estacion, Anio, Mes, Dia) %>% 
   summarise(mediciones_dia = n()) %>%
   group_by(Estacion, Anio) %>% 
@@ -291,7 +414,7 @@ tabla_dia %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.4, hjust = 1),
         legend.position = "none") + 
   scale_fill_continuous(low="palegreen", high ="palegreen3", na.value = "transparent") + 
-  labs(x = "", y ="", title= "Número de superacion 24hs - 50 - PM10")
+  labs(x = "", y ="", title= "Número de superacion 24hs - 20 - SO2")  # modificar ACA
 
 
 
