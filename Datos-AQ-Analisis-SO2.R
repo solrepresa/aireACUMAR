@@ -112,7 +112,7 @@ tabla_3h <- tabla %>%
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
-# SO2: 24 hs = 367, 200, 160, 125, 50, 20
+# SO2: 24 hs = 200, 160, 125, 50, 20
 
 
 plotList <- list()
@@ -124,7 +124,7 @@ for(j in 1:length(levels(tabla_dia$Estacion))){
     geom_line() + theme_bw() + 
     labs(x ="", y = expression(SO[2]~(ug.m^-3)), 
          title = paste0(as.character(levels(tabla_dia$Estacion)[j]), " - horarias")) +
-    geom_hline(yintercept=367, col = "brown") + 
+    #geom_hline(yintercept=367, col = "brown") + 
     geom_hline(yintercept=200, col = "red") + 
     geom_hline(yintercept=160, col = "orange") + 
     geom_hline(yintercept=125, col = "yellow") + 
