@@ -223,6 +223,8 @@ tabla_corr %>%
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
+
+
 tabla_hora_limp_dia <- data.frame()
 
 for(i in 1: length(levels(tabla$Estacion))){
@@ -237,7 +239,7 @@ for(i in 1: length(levels(tabla$Estacion))){
   names(tabla_na_dia) <- c("fecha", "Porc_NA")
 
   # aplicar limpieza 
-  tabla_na_dia[tabla_na_dia$Porc_NA > 25, 2] <- NA    #criterio = más de 30% NA al dia es removido
+  tabla_na_dia[tabla_na_dia$Porc_NA > 25, 2] <- NA    #criterio = más de 25% NA al dia es removido
   tabla_na_dia <- tabla_na_dia[complete.cases(tabla_na_dia),]
   
   # generar indices 
@@ -269,3 +271,16 @@ tabla_anual_limp_dia <- tabla_hora_limp_dia %>%
 
 tabla_anual_limp_dia$media[tabla_anual_limp_dia$n < 274] <- NA # recorte en Anios 75% de datos
 tabla_anual_limp_dia$media[tabla_anual_limp_dia$n_faltantes > 91] <- NA #condicion de exclusion > datos faltantes
+
+
+
+# Promedio anual de datos horarios
+
+tabla_anual_hora <- tabla %>% 
+  group_by(Estacion, Anio) %>%
+  summarise(media = round(mean(`NO2-1h`, na.rm = TRUE), 2),
+            n_faltantes = sum(is.na(`NO2-1h`)), # por año, por estacion
+            n = n())  # total de datos en el año y en la estacion
+
+tabla_anual_hora$media[tabla_anual_hora$n < 6570] <- NA # recorte en Anios 75% de datos
+tabla_anual_hora$media[tabla_anual_hora$n_faltantes > 2190] <- NA #condicion de exclusion > datos faltantes

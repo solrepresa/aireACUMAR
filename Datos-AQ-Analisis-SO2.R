@@ -108,6 +108,35 @@ tabla_3h <- tabla %>%
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
+# # Serie de tiempo HORARIAS #### 
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+# SO2: hs = 250, 230, 196
+
+
+plotList <- list()
+
+for(j in 1:length(levels(tabla$Estacion))){
+  a <- tabla[which(tabla$Estacion == levels(tabla$Estacion)[j]),]
+  
+  plotList[[j]] <- ggplot(a, aes( x = `Fecha-Hora`, y = `SO2-1h`)) + 
+    geom_line() + theme_bw() + 
+    labs(x ="", y = expression(SO[2]~(ug.m^-3)), 
+         title = paste0(as.character(levels(tabla$Estacion)[j]), " - horarias")) +
+    geom_hline(yintercept=250, col = "red") + 
+    geom_hline(yintercept=230, col = "orange") + 
+    geom_hline(yintercept=196, col = "green")  # +
+  # scale_x_date(date_breaks = "1 year", date_labels = "%Y")
+}
+
+plotList[[1]]
+plotList[[2]]
+plotList[[3]]
+plotList[[4]]
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
 # # Serie de tiempo DIARIO #### 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
@@ -123,7 +152,7 @@ for(j in 1:length(levels(tabla_dia$Estacion))){
   plotList[[j]] <- ggplot(a, aes( x = Fecha, y = mean)) + 
     geom_line() + theme_bw() + 
     labs(x ="", y = expression(SO[2]~(ug.m^-3)), 
-         title = paste0(as.character(levels(tabla_dia$Estacion)[j]), " - horarias")) +
+         title = paste0(as.character(levels(tabla_dia$Estacion)[j]), " - diarias")) +
     #geom_hline(yintercept=367, col = "brown") + 
     geom_hline(yintercept=200, col = "red") + 
     geom_hline(yintercept=160, col = "orange") + 

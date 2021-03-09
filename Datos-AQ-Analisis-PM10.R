@@ -41,7 +41,9 @@ tabla$Mes <- month(tabla$`Fecha-Hora`)
 tabla$Dia <- day(tabla$`Fecha-Hora`)
 
 # Quitar datos de años que no usamos
-tabla <- tabla[-which(tabla$Anio == 2021 | tabla$Anio == 2022 | tabla$Anio == 2023 | tabla$Anio == 2024),]
+tabla <- tabla[-which(tabla$Anio == 2010 |tabla$Anio == 2011 |tabla$Anio == 2012 | tabla$Anio == 2013 |  
+                        tabla$Anio == 2014 | tabla$Anio == 2021 | tabla$Anio == 2022 | 
+                        tabla$Anio == 2023 | tabla$Anio == 2024),]
 
 tabla$Mes <- factor(tabla$Mes)
 tabla$Anio <- factor(tabla$Anio)
